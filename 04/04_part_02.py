@@ -1,4 +1,5 @@
 from typing import List
+from re import match
 
 
 class Passport:
@@ -17,6 +18,80 @@ class Passport:
     @is_valid.setter
     def is_valid(self, other: bool):
         self.__is_valid = other
+
+
+class TagData:
+    def __init__(self, tag_type: str, data: str):
+        self.__tag_type = tag_type
+        self.__data = data
+        self.__is_valid = self.__validate()
+
+    @property
+    def is_valid(self):
+        return self.__is_valid
+
+    def __validate(self):
+        valid_tags = {
+            "byr": self.__validate_byr,
+            "iyr": self.__validate_iyr,
+            "eyr": self.__validate_eyr,
+            "hgt": self.__validate_hgt,
+            "hcl": self.__validate_hcl,
+            "ecl": self.__validate_ecl,
+            "pid": self.__validate_pid,
+            "cid": self.__validate_pid,
+        }
+        return valid_tags[self.__tag_type]()
+
+    def __validate_byr(self):
+        try:
+            data = int(self.__data)
+            return data in range(1920, 2003)
+        except ValueError:
+            return False
+
+    def __validate_iyr(self):
+        try:
+            data = int(self.__data)
+            return data in range(2010, 2021)
+        except ValueError:
+            return False
+
+    def __validate_eyr(self):
+        try:
+            data = int(self.__data)
+            return data in range(2020, 2031)
+        except ValueError:
+            return False
+
+    def __validate_hgt(self):
+        pattern = r"(^[0-9]{2})(in)$|(^[0-9]{3})(cm)$"
+        m = match(pattern, self.__data)
+        if not m:
+            return False
+        mlist = [g for g in m.groups()]
+        if "in" in mlist:
+            return 59 <= int(m.group(1)) <= 76
+        elif "cm" in mlist:
+            return 150 <= int(m.group(3)) <= 193
+
+    def __validate_hcl(self):
+        pattern = r"^#[0-9a-f]{6}$"
+        m = match(pattern, self.__data)
+        return True if m else False
+
+    def __validate_ecl(self):
+        eye_colors = {"amb", "blu", "brn", "gry", "grn", "hzl", "oth"}
+        return self.__data in eye_colors
+
+    def __validate_pid(self):
+        pattern = r"^[0-9]{9}$"
+        m = match(pattern, self.__data)
+        return True if m else False
+
+    @staticmethod
+    def __validate_cid():
+        return True
 
 
 class PassportRepository:
@@ -88,9 +163,11 @@ class PassportRepositoryEvaluator:
                 "cid": False,
             }
             for entry in entry_data:
-                tag, _ = entry.split(":")
+                tag, data = entry.split(":")
                 if tag in tags:
-                    tags[tag] = True
+                    tag_data_obj = TagData(tag, data)
+                    if tag_data_obj.is_valid:
+                        tags[tag] = True
 
             if all([tags[tag] for tag, value in tags.items()]):
                 passport.is_valid = True
