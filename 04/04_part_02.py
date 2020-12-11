@@ -39,7 +39,7 @@ class TagData:
             "hcl": self.__validate_hcl,
             "ecl": self.__validate_ecl,
             "pid": self.__validate_pid,
-            "cid": self.__validate_pid,
+            "cid": self.__validate_cid,
         }
         return valid_tags[self.__tag_type]()
 
