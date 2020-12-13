@@ -114,30 +114,22 @@ class BoardingPassEvaluator:
         return self.__boarding_pass_highest_id
 
     def __boarding_pass_seat_number_decoder(self):
+        def recursive_position_finder(idx, max_idx, start, end, sequence):
+            current_position_range = list(range(start, end))
+            if idx > max_idx:
+                return current_position_range[0]
+            else:
+                if sequence[idx] in ("F", "L"):
+                    end -= len(current_position_range) // 2
+                elif sequence[idx] in ("B", "R"):
+                    start += len(current_position_range) // 2
+                return recursive_position_finder(idx + 1, max_idx, start, end, sequence)
+
         for boarding_pass in self.__boarding_pass_registry.registry:
-            seq = boarding_pass.sequence
-            n_seat = []
-            front_row, back_row = 0, 128
-            current_row_range = list(range(front_row, back_row))
-            for i in range(7):  # finding the row
-                if seq[i] == "F":
-                    back_row -= len(current_row_range) // 2
-                elif seq[i] == "B":
-                    front_row += len(current_row_range) // 2
-                current_row_range = list(range(front_row, back_row))
-            n_seat.append(current_row_range[0])
+            row = recursive_position_finder(idx=0, max_idx=6, start=0, end=128, sequence=boarding_pass.sequence)
+            col = recursive_position_finder(idx=7, max_idx=9, start=0, end=8, sequence=boarding_pass.sequence)
 
-            left_col, right_col = 0, 8
-            current_col_range = list(range(left_col, right_col))
-            for i in range(7, 10):  # finding the column
-                if seq[i] == "L":
-                    right_col -= len(current_col_range) // 2
-                elif seq[i] == "R":
-                    left_col += len(current_col_range) // 2
-                current_col_range = list(range(left_col, right_col))
-            n_seat.append(current_col_range[0])
-
-            boarding_pass.seat = tuple(n_seat)
+            boarding_pass.seat = (row, col)
 
     def __boarding_pass_id_calculator(self):
         for boarding_pass in self.__boarding_pass_registry.registry:
